@@ -125,15 +125,38 @@ export const queryAssistantStream = async (
       const chunk = decoder.decode(value, { stream: true });
       buffer += chunk;
       
-      // Check for error marker in buffer
-      const errorMatch = buffer.match(/\[ERROR:(\d+):([^\]]+)\]/);
-      if (errorMatch) {
-        const errorCode = parseInt(errorMatch[1], 10);
-        const errorMessage = errorMatch[2];
-        throw new ApiError(errorCode, errorMessage);
-      }
+      // Process complete SSE messages
+      const lines = buffer.split('\n');
+      buffer = lines[lines.length - 1]; // Keep incomplete line in buffer
       
-      onChunk(chunk);
+      for (let i = 0; i < lines.length - 1; i++) {
+        const line = lines[i];
+        
+        // Parse SSE format: "data: content"
+        if (line.startsWith('data: ')) {
+          const data = line.slice(6);
+          
+          // Check for error marker
+          const errorMatch = data.match(/\[ERROR:(\d+):([^\]]+)\]/);
+          if (errorMatch) {
+            const errorCode = parseInt(errorMatch[1], 10);
+            const errorMessage = errorMatch[2];
+            throw new ApiError(errorCode, errorMessage);
+          }
+          
+          onChunk(data);
+        }
+      }
     }
+  }
+  
+  // Process any remaining buffer content
+  if (buffer.trim().startsWith('data: ')) {
+    const data = buffer.trim().slice(6);
+    const errorMatch = data.match(/\[ERROR:(\d+):([^\]]+)\]/);
+    if (errorMatch) {
+      throw new ApiError(parseInt(errorMatch[1], 10), errorMatch[2]);
+    }
+    onChunk(data);
   }
 };

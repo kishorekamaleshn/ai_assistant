@@ -130,13 +130,13 @@ def generate_ai_response_stream(request: QueryRequest) -> StreamingResponse:
     def stream_generator():
         try:
             if first_chunk and first_chunk.text:
-                yield first_chunk.text
+                yield f"data: {first_chunk.text}\n\n"
             for chunk in iterator:
                 if chunk.text:
-                    yield chunk.text
+                    yield f"data: {chunk.text}\n\n"
         except Exception as e:
             print(f"Streaming Error mid-stream: {e}")
             error_code, error_message = _extract_error_details(e)
-            yield f"\n[ERROR:{error_code}:{error_message}]"
+            yield f"data: [ERROR:{error_code}:{error_message}]\n\n"
 
-    return StreamingResponse(stream_generator(), media_type="text/plain")
+    return StreamingResponse(stream_generator(), media_type="text/event-stream")
