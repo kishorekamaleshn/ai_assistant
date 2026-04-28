@@ -30,8 +30,8 @@ function App() {
   const [authChecking, setAuthChecking] = useState<boolean>(true);
 
   // --- Login form state ---
-  const [username, setUsername] = useState('admin');
-  const [password, setPassword] = useState('password');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
